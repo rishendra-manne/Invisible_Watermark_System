@@ -1,0 +1,9 @@
+tensorflow
+tensorflow_datasets
+kaggle
+numpy
+huggingface_hub
+streamlit
+matplotlib
+flask
+openCV-python
