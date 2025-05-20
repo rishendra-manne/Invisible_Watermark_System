@@ -20,7 +20,6 @@ class TrainingConfig:
     loss_weights=[1.0,0.75]
     learning_rate=0.001
     repo_id="rishi12111/watermarks"
-    access_token = os.getenv("HF_ACCESS_TOKEN")
 
 class VisualizeCallback(tf.keras.callbacks.Callback):
     def __init__(self, dataset):
