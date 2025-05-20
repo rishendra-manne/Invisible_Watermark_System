@@ -158,9 +158,11 @@ class Model:
             logging.info("failed to create decoder")
             raise CustomException(e,sys)
 
-    def make_combined_model(self,encoder,decoder):
+    def make_combined_model(self):
         logging.info("creating combined model")
         try:
+            encoder=self.make_encoder()
+            decoder=self.make_decoder()
             combined_input1 = Input(shape=self.model_config.input_shape, name="hide_input")
             combined_input2 = Input(shape=self.model_config.input_shape, name="cover_input")
             watermarked = encoder([combined_input1, combined_input2])
