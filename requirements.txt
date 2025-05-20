@@ -6,4 +6,5 @@ huggingface_hub
 streamlit
 matplotlib
 flask
-openCV-python
+opencv-python
+-e.
