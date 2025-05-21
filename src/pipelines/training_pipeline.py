@@ -51,7 +51,12 @@ class TrainingPipeline:
             cover_data,hide_data= self.data_ingestion.get_data()
             cover_image_paths,hide_image_paths=self.data_preprocessing.get_image_paths((cover_data,hide_data))
             training_set=self.data_preprocessing.load_and_combine_data(cover_image_paths,hide_image_paths)
-            fitted_set=training_set.map(self.data_transformation.transform_data_for_fit)
+            training_set = training_set.map(lambda cover, hide: (
+                self.data_transformation.normalize_batch(cover),
+                self.data_transformation.normalize_batch(hide)
+            ))
+            fitted_set=training_set.map(lambda cover, hide:
+                    self.data_transformation.transform_data_for_fit(cover, hide))
             model=self.model.make_combined_model()
             model.compile(
                optimizer=tf.keras.optimizers.Adam(self.training_config.learning_rate),
