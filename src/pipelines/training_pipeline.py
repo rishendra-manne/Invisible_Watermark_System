@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from src.components.data_ingestion import DataIngestion
 from src.components.data_preprocessing import DataPreprocessing
 from src.components.data_transformation import DataTransformation
-from src.components.model_evalution import ModelEvalution
+from src.components.model_evalution import ModelEvaluation
 from src.utils import plot_and_save_results,save_results
 from src.components.model import Model
 from src.components import model_evalution
@@ -32,7 +32,7 @@ class VisualizeCallback(tf.keras.callbacks.Callback):
         if (epoch + 1) % 1 == 0:
             for cover_images, hide_images in self.dataset:
                 watermarked_images, recovered_images = self.model.predict([cover_images, hide_images])
-                plot_and_save_results(watermarked_images,recovered_images)
+                plot_and_save_results(watermarked_images,recovered_images,cover_images,hide_images)
 
 
 class TrainingPipeline:
@@ -42,7 +42,7 @@ class TrainingPipeline:
         self.data_ingestion=DataIngestion(self.training_config.repo_id,self.training_config.access_token)
         self.data_transformation=DataTransformation()
         self.data_preprocessing=DataPreprocessing()
-        self.model_evalution=ModelEvalution()
+        self.model_evaluation=ModelEvaluation()
         self.model = Model()
 
     def train_model(self):
@@ -66,7 +66,7 @@ class TrainingPipeline:
                callbacks=[visualize_callback]
               )
             logging.info("model training finished")
-            return model_evalution.evaluate_model(model,training_set)
+            return self.model_evaluation.evaluate_model(model,training_set)
         except Exception as e:
             logging.info("model training failed")
             raise CustomException(e,sys)
@@ -74,8 +74,8 @@ class TrainingPipeline:
 
 def main():
     pipeline=TrainingPipeline()
-    result=pipeline.train_model()
-    save_results(result)
+    ratio,acc=pipeline.train_model()
+    save_results(ratio,acc)
 
 if __name__ == "__main__":
     main()
