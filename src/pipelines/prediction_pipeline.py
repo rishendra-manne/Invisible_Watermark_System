@@ -24,6 +24,7 @@ class PredictionPipeline:
     def hide_watermark(self, cover_image, hide_image):
         try:
             logging.info("Trying to encode the image...")
+            cover_image,hide_image=cover_image/255.0,hide_image/255.0
             cover_image,hide_image=self.data_transform.normalize_batch(cover_image),self.data_transform.normalize_batch(hide_image)
             encoded_image = self.encoder.predict([cover_image, hide_image], verbose=0)
             logging.info("Encoding successful.")
@@ -35,6 +36,7 @@ class PredictionPipeline:
     def reveal_watermark(self, watermarked_image):
         try:
             logging.info("Extraction of watermark is in progress...")
+            watermarked_image=watermarked_image/255.0
             watermarked_image=self.data_transform.normalize_batch(watermarked_image)
             decoded_watermark = self.decoder.predict(watermarked_image, verbose=0)
             logging.info("Extraction of watermark succeeded.")

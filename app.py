@@ -1,15 +1,20 @@
 import streamlit as st
-import numpy as np
-from tensorflow.keras.models import load_model
-from PIL import Image
-import imageio
-import matplotlib.pyplot as plt
-import io
+import requests
 import base64
-import os
+from PIL import Image
+import io
+import numpy as np
+from typing import Optional
+
+# Set page config
+st.set_page_config(
+    page_title="Image Watermarking System",
+    page_icon="🖼️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 
-# Styling and theme setup
 def set_professional_theme():
     # White background with subtle pale green gradient and professional styling
     st.markdown(
@@ -184,202 +189,253 @@ def set_professional_theme():
     )
 
 
-# Preprocessing functions
-def normalize_batch(images):
-    """Performs channel-wise z-score normalization"""
-    return (images - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])
+class WatermarkingAPI:
+    def __init__(self, base_url: str = "http://localhost:8000"):
+        self.base_url = base_url
+
+    def check_health(self) -> bool:
+        """Check if API is healthy"""
+        try:
+            response = requests.get(f"{self.base_url}/health", timeout=5)
+            return response.status_code == 200
+        except:
+            return False
+
+    def hide_watermark(self, cover_image: bytes, watermark_image: bytes) -> Optional[str]:
+        """Hide watermark in cover image"""
+        try:
+            files = {
+                'cover_image': ('cover.png', cover_image, 'image/png'),
+                'watermark_image': ('watermark.png', watermark_image, 'image/png')
+            }
+
+            response = requests.post(
+                f"{self.base_url}/hide-watermark",
+                files=files,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                return result.get('encoded_image')
+            else:
+                st.error(f"API Error: {response.status_code} - {response.text}")
+                return None
+        except Exception as e:
+            st.error(f"Connection Error: {str(e)}")
+            return None
+
+    def reveal_watermark(self, watermarked_image: bytes) -> Optional[str]:
+        """Reveal watermark from watermarked image"""
+        try:
+            files = {
+                'watermarked_image': ('watermarked.png', watermarked_image, 'image/png')
+            }
+
+            response = requests.post(
+                f"{self.base_url}/reveal-watermark",
+                files=files,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                return result.get('revealed_watermark')
+            else:
+                st.error(f"API Error: {response.status_code} - {response.text}")
+                return None
+        except Exception as e:
+            st.error(f"Connection Error: {str(e)}")
+            return None
 
 
-def denormalize_batch(images, should_clip=True):
-    """Denormalize the images for prediction"""
-    images = (images * np.array([0.229, 0.224, 0.225])) + np.array([0.485, 0.456, 0.406])
-    if should_clip:
-        images = np.clip(images, 0, 1)
-    return images
+def image_to_bytes(image: Image.Image) -> bytes:
+    """Convert PIL Image to bytes"""
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
-# Image to base64 for display
-def get_image_base64(img):
-    buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue()).decode()
-    return img_str
+def base64_to_image(base64_str: str) -> Image.Image:
+    """Convert base64 string to PIL Image"""
+    # Remove data URL prefix if present
+    if base64_str.startswith('data:image'):
+        base64_str = base64_str.split(',')[1]
+
+    image_data = base64.b64decode(base64_str)
+    return Image.open(io.BytesIO(image_data))
 
 
-# Hide operation function
-def hide_image(cover_image, secret_image, model_path):
-    model = load_model(model_path)
-
-    # Convert to RGB and resize to 224x224
-    secret_image = secret_image.convert('RGB')
-    cover_image = cover_image.convert('RGB')
-
-    # Resize images to 224x224
-    if secret_image.size != (224, 224):
-        secret_image = secret_image.resize((224, 224))
-    if cover_image.size != (224, 224):
-        cover_image = cover_image.resize((224, 224))
-
-    # Convert to numpy arrays and normalize
-    secret_image_in = np.array(secret_image).reshape(1, 224, 224, 3) / 255.0
-    cover_image_in = np.array(cover_image).reshape(1, 224, 224, 3) / 255.0
-
-    # Make prediction
-    steg_image_out = model.predict([normalize_batch(secret_image_in), normalize_batch(cover_image_in)])
-    steg_image_out = denormalize_batch(steg_image_out)
-    steg_image_out = np.squeeze(steg_image_out) * 255.0
-    steg_image_out = np.uint8(steg_image_out)
-
-    # Convert back to PIL Image
-    steg_pil = Image.fromarray(steg_image_out)
-    return steg_pil
-
-
-# Reveal operation function
-def reveal_image(stego_image, model_path):
-    model = load_model(model_path, compile=False)
-
-    # Convert to RGB and resize to 224x224
-    stego_image = stego_image.convert('RGB')
-
-    # Resize the image to 224x224
-    if stego_image.size != (224, 224):
-        stego_image = stego_image.resize((224, 224))
-
-    # Convert to numpy arrays and normalize
-    stego_image_in = np.array(stego_image).reshape(1, 224, 224, 3) / 255.0
-
-    # Make prediction
-    secret_image_out = model.predict([normalize_batch(stego_image_in)])
-    secret_image_out = denormalize_batch(secret_image_out)
-    secret_image_out = np.squeeze(secret_image_out) * 255.0
-    secret_image_out = np.uint8(secret_image_out)
-
-    # Convert back to PIL Image
-    secret_pil = Image.fromarray(secret_image_out)
-    return secret_pil
-
-
-# Main app
 def main():
+    # Apply theme
     set_professional_theme()
 
-    # Updated centered and attractive header
+    # Initialize API client
+    api = WatermarkingAPI()
+
+    # Header
     st.markdown("""
     <div class="main-title">
-        <p class="logo-text">Deep learning based invisible watermarking system </p>
-        <h1>INVISIBLE WATERMARK</h1>
-        <p class="subtitle">Secure your valuable images with  invisible watermarks that protect your intellectual property while remaining completely undetectable to the human eye.</p>
+        <div class="logo-text">Advanced AI</div>
+        <h1>Image Watermarking System</h1>
+        <div class="subtitle">
+            Securely hide and reveal watermarks in images using deep learning technology
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="info-panel">
-        <p style='color: #2E7D32; font-size: 16px; margin-bottom: 5px; font-weight: 500;'>
-            Image Steganography
-        </p>
-        <p style='color: #555; font-size: 14px; margin: 0;'>
-            Securely hide confidential images within ordinary images using advanced deep learning technology.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    # API Status Check
+    with st.spinner("Checking API connection..."):
+        api_healthy = api.check_health()
 
-    # Paths to models - Configure these to your model paths
-    hide_model_path = "/teamspace/studios/this_studio/models/hide.h5"
-    reveal_model_path = "/teamspace/studios/this_studio/models/reveal.h5"
+    if not api_healthy:
+        st.error("⚠️ API Server is not running. Please start the FastAPI server first.")
+        st.code("uvicorn main:app --reload", language="bash")
+        return
+    else:
+        st.success("✅ API Server is running")
 
-    # Create tabs
-    tab1, tab2 = st.tabs(["Hide Image", "Reveal Image"])
+    # Sidebar
+    with st.sidebar:
+        st.markdown("### 🛠️ Settings")
+        api_url = st.text_input("API URL", value="http://localhost:8000")
+        if api_url != api.base_url:
+            api.base_url = api_url
 
-    # Hide Image Tab
+        st.markdown("### 📋 Instructions")
+        st.markdown("""
+        **Hide Watermark:**
+        1. Upload a cover image
+        2. Upload a watermark image
+        3. Click 'Hide Watermark'
+
+        **Reveal Watermark:**
+        1. Upload a watermarked image
+        2. Click 'Reveal Watermark'
+        """)
+
+        st.markdown("### ℹ️ Tips")
+        st.info("For best results, use images of similar sizes and high quality.")
+
+    # Main content
+    tab1, tab2 = st.tabs(["🔒 Hide Watermark", "🔓 Reveal Watermark"])
+
     with tab1:
-        st.header("Hide a Secret Image")
+        st.markdown("## Hide Watermark in Image")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("Upload Cover Image")
-            st.markdown("This is the visible image that will hide your secret.")
-            cover_file = st.file_uploader("Choose a cover image", type=["jpg", "jpeg", "png"], key="cover")
-            if cover_file is not None:
+            st.markdown("### Cover Image")
+            cover_file = st.file_uploader(
+                "Upload cover image",
+                type=['png', 'jpg', 'jpeg'],
+                key="cover_upload"
+            )
+
+            if cover_file:
                 cover_image = Image.open(cover_file)
                 st.image(cover_image, caption="Cover Image", use_column_width=True)
 
         with col2:
-            st.subheader("Upload Secret Image")
-            st.markdown("This is the image you want to hide.")
-            secret_file = st.file_uploader("Choose a secret image", type=["jpg", "jpeg", "png"], key="secret")
-            if secret_file is not None:
-                secret_image = Image.open(secret_file)
-                st.image(secret_image, caption="Secret Image", use_column_width=True)
+            st.markdown("### Watermark Image")
+            watermark_file = st.file_uploader(
+                "Upload watermark image",
+                type=['png', 'jpg', 'jpeg'],
+                key="watermark_upload"
+            )
 
-        if st.button("Process", key="hide_button"):
-            if cover_file is not None and secret_file is not None:
-                with st.spinner("Processing... Please wait."):
-                    try:
-                        # Perform hiding operation
-                        steg_image = hide_image(cover_image, secret_image, hide_model_path)
+            if watermark_file:
+                watermark_image = Image.open(watermark_file)
+                st.image(watermark_image, caption="Watermark Image", use_column_width=True)
 
-                        # Save the steganographic image
-                        output_filepath = os.path.join("steg_image.png")
-                        steg_image.save(output_filepath)
+        # Process button
+        if st.button("🔒 Hide Watermark", type="primary", use_container_width=True):
+            if cover_file and watermark_file:
+                with st.spinner("Hiding watermark... This may take a few moments."):
+                    cover_bytes = image_to_bytes(cover_image)
+                    watermark_bytes = image_to_bytes(watermark_image)
 
-                        # Display the result
-                        st.success(f"Success! Steganographic image created and saved to {output_filepath}")
-                        st.image(steg_image, caption="Steganographic Image", use_column_width=True)
+                    result = api.hide_watermark(cover_bytes, watermark_bytes)
 
-                        # Option to download
-                        img_base64 = get_image_base64(steg_image)
-                        href = f'<a href="data:image/png;base64,{img_base64}" download="steg_image.png" style="background-color: #4CAF50; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px; font-size: 14px;">Download Image</a>'
-                        st.markdown(href, unsafe_allow_html=True)
+                    if result:
+                        st.success("✅ Watermark hidden successfully!")
 
-                    except Exception as e:
-                        st.error(f"An error occurred: {str(e)}")
+                        # Display result
+                        result_image = base64_to_image(result)
+
+                        col1, col2, col3 = st.columns([1, 2, 1])
+                        with col2:
+                            st.markdown("### 🖼️ Watermarked Image")
+                            st.image(result_image, caption="Watermarked Image", use_column_width=True)
+
+                            # Download button
+                            result_bytes = image_to_bytes(result_image)
+                            st.download_button(
+                                label="📥 Download Watermarked Image",
+                                data=result_bytes,
+                                file_name="watermarked_image.png",
+                                mime="image/png",
+                                use_container_width=True
+                            )
             else:
-                st.warning("Please upload both cover and secret images first.")
+                st.warning("⚠️ Please upload both cover and watermark images.")
 
-    # Reveal Image Tab
     with tab2:
-        st.header("Reveal a Hidden Image")
+        st.markdown("## Reveal Watermark from Image")
 
-        st.subheader("Upload Steganographic Image")
-        st.markdown("Upload an image that contains a hidden secret.")
-        stego_file = st.file_uploader("Choose a steganographic image", type=["jpg", "jpeg", "png"], key="stego")
-        if stego_file is not None:
-            stego_image = Image.open(stego_file)
-            st.image(stego_image, caption="Steganographic Image", use_column_width=True)
+        col1, col2, col3 = st.columns([1, 2, 1])
 
-        if st.button("Process", key="reveal_button"):
-            if stego_file is not None:
-                with st.spinner("Analyzing image..."):
-                    try:
-                        # Perform revealing operation
-                        secret_image = reveal_image(stego_image, reveal_model_path)
+        with col2:
+            st.markdown("### Watermarked Image")
+            watermarked_file = st.file_uploader(
+                "Upload watermarked image",
+                type=['png', 'jpg', 'jpeg'],
+                key="watermarked_upload"
+            )
 
-                        # Save the revealed image
-                        output_filepath = os.path.join("secret_out.png")
-                        secret_image.save(output_filepath)
+            if watermarked_file:
+                watermarked_image = Image.open(watermarked_file)
+                st.image(watermarked_image, caption="Watermarked Image", use_column_width=True)
 
-                        # Display the result
-                        st.success(f"Success! Secret image revealed and saved to {output_filepath}")
-                        st.image(secret_image, caption="Revealed Secret Image", use_column_width=True)
+        # Process button
+        if st.button("🔓 Reveal Watermark", type="primary", use_container_width=True):
+            if watermarked_file:
+                with st.spinner("Revealing watermark... This may take a few moments."):
+                    watermarked_bytes = image_to_bytes(watermarked_image)
 
-                        # Option to download
-                        img_base64 = get_image_base64(secret_image)
-                        href = f'<a href="data:image/png;base64,{img_base64}" download="secret_out.png" style="background-color: #4CAF50; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 10px; font-size: 14px;">Download Image</a>'
-                        st.markdown(href, unsafe_allow_html=True)
+                    result = api.reveal_watermark(watermarked_bytes)
 
-                    except Exception as e:
-                        st.error(f"An error occurred: {str(e)}")
+                    if result:
+                        st.success("✅ Watermark revealed successfully!")
+
+                        # Display result
+                        revealed_image = base64_to_image(result)
+
+                        col1, col2, col3 = st.columns([1, 2, 1])
+                        with col2:
+                            st.markdown("### 🔍 Revealed Watermark")
+                            st.image(revealed_image, caption="Revealed Watermark", use_column_width=True)
+
+                            # Download button
+                            result_bytes = image_to_bytes(revealed_image)
+                            st.download_button(
+                                label="📥 Download Revealed Watermark",
+                                data=result_bytes,
+                                file_name="revealed_watermark.png",
+                                mime="image/png",
+                                use_container_width=True
+                            )
             else:
-                st.warning("Please upload a steganographic image first.")
+                st.warning("⚠️ Please upload a watermarked image.")
 
     # Footer
     st.markdown("""
     <div class="footer">
-        <h3 style='color: #2E7D32; margin-bottom: 10px; font-size: 16px;'>About Steganography Technology</h3>
-        <p style='margin-bottom: 5px;'>This application utilizes deep neural networks to conceal images within other images with minimal visual distortion.</p>
-        <p>The concealed image can be later extracted using our proprietary neural network technology.</p>
+        <strong>Image Watermarking System</strong> | 
+        Powered by Deep Learning & FastAPI | 
+        Built with Streamlit
     </div>
     """, unsafe_allow_html=True)
 
