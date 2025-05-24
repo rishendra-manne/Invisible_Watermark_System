@@ -3,6 +3,7 @@ from src.logger import logging
 from tensorflow.keras.models import load_model
 from dataclasses import dataclass
 from src.components.data_transformation import DataTransformation
+import numpy as np
 import sys
 import os
 
@@ -17,16 +18,15 @@ class PredictionPipeline:
 
     def __init__(self):
         self.prediction_config = PredictionConfig()
-        self.encoder = load_model(self.prediction_config.encoder_path, compile=False)
-        self.decoder = load_model(self.prediction_config.decoder_path, compile=False)
+        self.encoder = load_model("/teamspace/studios/this_studio/models/hide.h5", compile=False)
+        self.decoder = load_model("/teamspace/studios/this_studio/models/reveal.h5", compile=False)
         self.data_transform=DataTransformation()
 
     def hide_watermark(self, cover_image, hide_image):
         try:
             logging.info("Trying to encode the image...")
-            cover_image,hide_image=cover_image/255.0,hide_image/255.0
             cover_image,hide_image=self.data_transform.normalize_batch(cover_image),self.data_transform.normalize_batch(hide_image)
-            encoded_image = self.encoder.predict([cover_image, hide_image], verbose=0)
+            encoded_image = self.encoder.predict([hide_image, cover_image], verbose=0)
             logging.info("Encoding successful.")
             return self.data_transform.denormalize_batch(encoded_image)
         except Exception as e:
@@ -36,7 +36,6 @@ class PredictionPipeline:
     def reveal_watermark(self, watermarked_image):
         try:
             logging.info("Extraction of watermark is in progress...")
-            watermarked_image=watermarked_image/255.0
             watermarked_image=self.data_transform.normalize_batch(watermarked_image)
             decoded_watermark = self.decoder.predict(watermarked_image, verbose=0)
             logging.info("Extraction of watermark succeeded.")

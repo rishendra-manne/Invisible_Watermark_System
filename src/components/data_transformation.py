@@ -6,9 +6,13 @@ import tensorflow as tf
 import numpy as np
 import sys
 import os
+
+mean, std = compute_mean_std(os.path.join("artifacts", "data", "cover_data"))
+
+
 @dataclass
 class DataTransformationConfig:
-    mean,std=compute_mean_std(os.path.join("artifacts","data","cover_data"))
+    mean,std=mean,std
 
 
 class DataTransformation:

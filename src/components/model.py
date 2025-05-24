@@ -1,7 +1,7 @@
 from src.exception import CustomException
 from src.logger import logging
 from dataclasses import dataclass
-from tensorflow.keras.layers import Conv2D,Input
+from tensorflow.keras.layers import Conv2D,Input,concatenate
 from tensorflow.keras import models
 import tensorflow as tf
 import os
@@ -48,7 +48,7 @@ class Model:
             prepare_conv_5x5 = Conv2D(50, kernel_size=5, padding="same", activation='relu', name='prep_conv5x5_4')(
                 prepare_conv_5x5)
 
-            prepare_concat_1 = tf.concatenate([prepare_conv_3x3, prepare_conv_4x4, prepare_conv_5x5], axis=3,
+            prepare_concat_1 = concatenate([prepare_conv_3x3, prepare_conv_4x4, prepare_conv_5x5], axis=3,
                                            name="prep_concat_1")
 
             prepare_conv_5x5 = Conv2D(50, kernel_size=5, padding="same", activation='relu', name='prep_conv5x5_f')(
@@ -58,10 +58,10 @@ class Model:
             prepare_conv_3x3 = Conv2D(50, kernel_size=3, padding="same", activation='relu', name='prep_conv3x3_f')(
                 prepare_concat_1)
 
-            prepare_prepare_concat_f1 = tf.concatenate([prepare_conv_5x5, prepare_conv_4x4, prepare_conv_3x3], axis=3,
+            prepare_prepare_concat_f1 = concatenate([prepare_conv_5x5, prepare_conv_4x4, prepare_conv_3x3], axis=3,
                                                     name="prep_concat_2")
 
-            hide_concat_h = tf.concatenate([cover, prepare_prepare_concat_f1], axis=3, name="hide_concat_1")
+            hide_concat_h = concatenate([cover, prepare_prepare_concat_f1], axis=3, name="hide_concat_1")
 
             hide_conv_3x3 = Conv2D(50, kernel_size=3, padding="same", activation='relu', name='hide_conv3x3_1')(
                 hide_concat_h)
@@ -90,7 +90,7 @@ class Model:
             hide_conv_5x5 = Conv2D(50, kernel_size=5, padding="same", activation='relu', name='hide_conv5x5_4')(
                 hide_conv_5x5)
 
-            hide_concat_1 = tf.concatenate([hide_conv_3x3, hide_conv_4x4, hide_conv_5x5], axis=3, name="hide_concat_2")
+            hide_concat_1 = concatenate([hide_conv_3x3, hide_conv_4x4, hide_conv_5x5], axis=3, name="hide_concat_2")
 
             hide_conv_5x5 = Conv2D(50, kernel_size=5, padding="same", activation='relu', name='hide_conv5x5_f')(
                 hide_concat_1)
@@ -99,7 +99,7 @@ class Model:
             hide_conv_3x3 = Conv2D(50, kernel_size=3, padding="same", activation='relu', name='hide_conv3x3_f')(
                 hide_concat_1)
 
-            hide_concat_f1 = tf.concatenate([hide_conv_5x5, hide_conv_4x4, hide_conv_3x3], axis=3, name="hide_concat_3")
+            hide_concat_f1 = concatenate([hide_conv_5x5, hide_conv_4x4, hide_conv_3x3], axis=3, name="hide_concat_3")
 
             cover_predict = Conv2D(3, kernel_size=1, padding="same", name='hide_conv_f')(hide_concat_f1)
             logging.info("successfully created encoder model")
@@ -137,7 +137,7 @@ class Model:
             reveal_conv_5x5 = Conv2D(50, kernel_size=5, padding="same", activation='relu', name='revl_conv5x5_4')(
                 reveal_conv_5x5)
 
-            reveal_concat_1 = tf.concatenate([reveal_conv_3x3, reveal_conv_4x4, reveal_conv_5x5], axis=3, name="revl_concat_1")
+            reveal_concat_1 = concatenate([reveal_conv_3x3, reveal_conv_4x4, reveal_conv_5x5], axis=3, name="revl_concat_1")
 
             reveal_conv_5x5 = Conv2D(50, kernel_size=5, padding="same", activation='relu', name='revl_conv5x5_f')(
                 reveal_concat_1)
@@ -146,7 +146,7 @@ class Model:
             reveal_conv_3x3 = Conv2D(50, kernel_size=3, padding="same", activation='relu', name='revl_conv3x3_f')(
                 reveal_concat_1)
 
-            reveal_concat_f1 = tf.concatenate([reveal_conv_5x5, reveal_conv_4x4, reveal_conv_3x3], axis=3,
+            reveal_concat_f1 = concatenate([reveal_conv_5x5, reveal_conv_4x4, reveal_conv_3x3], axis=3,
                                            name="revl_concat_2")
 
             secret_predict = Conv2D(3, kernel_size=1, padding="same", name='revl_conv_f')(reveal_concat_f1)
