@@ -21,6 +21,8 @@ class TrainingConfig:
     learning_rate=0.001
     repo_id="rishi12111/watermarks"
     access_token = os.getenv("HF_ACCESS_TOKEN")
+    encoder_save_path=os.path.join("artifacts","models","hide.h5")
+    decoder_save_path=os.path.join("artifacts","models","reveal.h5")
 
 class VisualizeCallback(tf.keras.callbacks.Callback):
     def __init__(self, dataset):
@@ -56,7 +58,9 @@ class TrainingPipeline:
             ))
             fitted_set=training_set.map(lambda cover, hide:
                     self.data_transformation.transform_data_for_fit(cover, hide))
-            model=self.model.make_combined_model()
+            encoder=self.model.make_encoder()
+            decoder=self.model.make_decoder()
+            model=self.model.make_combined_model(encoder,decoder)
             model.compile(
                optimizer=tf.keras.optimizers.Adam(self.training_config.learning_rate),
                loss=self.training_config.loss,
@@ -69,6 +73,8 @@ class TrainingPipeline:
                epochs=self.training_config.epochs,
                callbacks=[visualize_callback]
               )
+            encoder.save(self.training_config.encoder_save_path)
+            decoder.save(self.training_config.decoder_save_path)
             logging.info("model training finished")
             return self.model_evaluation.evaluate_model(model,training_set)
         except Exception as e:
