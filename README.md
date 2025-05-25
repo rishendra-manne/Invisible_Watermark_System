@@ -8,7 +8,6 @@ A sophisticated deep learning-based steganography system that can hide and revea
 - **Invisible Watermarking**: Hide secret images within cover images with minimal visual distortion
 - **Web Interface**: User-friendly Streamlit application for easy interaction
 - **High Performance**: Optimized for quality with PSNR evaluation metrics
-- **Batch Processing**: Support for processing multiple images
 - **Professional UI**: Modern, responsive web interface with real-time processing
 
 ## 🏗️ Architecture
@@ -36,18 +35,17 @@ The following images demonstrate the effectiveness of our invisible watermarking
 #### Example 1: Portrait Watermarking
 | Cover Image | Secret Image | Watermarked Image | Revealed Secret |
 |-------------|--------------|-------------------|-----------------|
-| ![Cover Image 1](results/cover_1.jpg) | ![Secret Image 1](results/secret_1.jpg) | ![Watermarked 1](results/watermarked_1.jpg) | ![Revealed 1](results/revealed_1.jpg) |
+| ![Cover Image 1](results/cover_1.png) | ![Secret Image 1](results/secret_1.png) | ![Watermarked 1](results/watermarked_1.png) | ![Revealed 1](results/revealed_1.png) |
 
 #### Example 2: Landscape Watermarking
 | Cover Image | Secret Image | Watermarked Image | Revealed Secret |
 |-------------|--------------|-------------------|-----------------|
-| ![Cover Image 2](results/cover_2.jpg) | ![Secret Image 2](results/secret_2.jpg) | ![Watermarked 2](results/watermarked_2.jpg) | ![Revealed 2](results/revealed_2.jpg) |
+| ![Cover Image 2](results/cover_2.png) | ![Secret Image 2](results/secret_2.png) | ![Watermarked 2](results/watermarked_2.png) | ![Revealed 2](results/revealed_2.png) |
 
 ### Performance Metrics
 
 For the above examples:
 - **PSNR (Watermarked vs Cover)**: 35.2 dB (High visual quality preserved)
-- **SSIM (Structural Similarity)**: 0.94 (Excellent structural preservation)
 - **Secret Recovery Accuracy**: 92.3% (Highly accurate secret extraction)
 - **Processing Time**: ~0.8 seconds per image pair
 
@@ -77,7 +75,7 @@ scikit-image>=0.19.0
 
 1. **Clone the repository:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/rishendra-manne/Invisible_Watermark_System.git
 cd Invisible_Watermark_System
 ```
 
@@ -186,7 +184,6 @@ The system is evaluated using multiple key metrics:
 
 ### Quality Metrics
 - **PSNR (Peak Signal-to-Noise Ratio)**: Measures the quality of watermarked images
-- **SSIM (Structural Similarity Index)**: Evaluates structural preservation
 - **MSE (Mean Squared Error)**: Quantifies pixel-level differences
 
 ### Accuracy Metrics
@@ -195,7 +192,6 @@ The system is evaluated using multiple key metrics:
 
 ### Typical Performance
 - **PSNR**: >30 dB (high visual quality)
-- **SSIM**: >0.90 (excellent structural preservation)
 - **Retrieval Accuracy**: >85% (reliable secret recovery)
 - **Processing Speed**: <1 second per image pair
 
@@ -343,8 +339,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 **Rishi**
 - Email: mrishe6@gmail.com
 - Project Version: 0.0.1
-- GitHub: [Your GitHub Profile]
-
+  
 ## 🙏 Acknowledgments
 
 - **TensorFlow team** for the deep learning framework
