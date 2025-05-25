@@ -220,10 +220,7 @@ Invisible_Watermark_System/
 │   ├── data/                     # Training data
 │   ├── models/                   # Trained model files
 │   ├── logs/                     # Training logs
-│   └── results/                  # Evaluation results
-├── models/                       # Pre-trained models
-│   ├── hide.h5                   # Encoder model
-│   └── reveal.h5                 # Decoder model
+│   
 └── results/                      # Sample result images
     ├── cover_1.jpg              # Sample cover image 1
     ├── secret_1.jpg             # Sample secret image 1
