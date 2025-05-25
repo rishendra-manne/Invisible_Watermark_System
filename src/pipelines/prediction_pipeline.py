@@ -18,8 +18,8 @@ class PredictionPipeline:
 
     def __init__(self):
         self.prediction_config = PredictionConfig()
-        self.encoder = load_model("/teamspace/studios/this_studio/models/hide.h5", compile=False)
-        self.decoder = load_model("/teamspace/studios/this_studio/models/reveal.h5", compile=False)
+        self.encoder = load_model(self.prediction_config.encoder_path, compile=False)
+        self.decoder = load_model(self.prediction_config.decoder_path, compile=False)
         self.data_transform=DataTransformation()
 
     def hide_watermark(self, cover_image, hide_image):

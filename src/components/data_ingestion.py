@@ -9,7 +9,7 @@ import os
 class IngestionConfig:
     cover_data = os.path.join("artifacts","data","cover_data")
     hide_data = os.path.join("artifacts","data","hide_data")
-    output_dir = os.path.join('src', 'artifacts', 'data')
+    output_dir = os.path.join('artifacts', 'data')
 
 class DataIngestion:
 

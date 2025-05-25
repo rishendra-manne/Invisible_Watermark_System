@@ -21,7 +21,6 @@ class TrainingConfig:
     learning_rate=0.001
     repo_id="rishi12111/watermarks"
     access_token = os.getenv("HF_ACCESS_TOKEN")
-    access_token = "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"
 
 class VisualizeCallback(tf.keras.callbacks.Callback):
     def __init__(self, dataset):
